@@ -1,12 +1,12 @@
 package com.mango.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Id;
-import javax.persistence.Table;
 import java.time.LocalDate;
 
 /**
@@ -20,7 +20,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "config_info_route")
+@TableName(value = "config_info_route")
 public class GatewayRoute {
 
     /**
