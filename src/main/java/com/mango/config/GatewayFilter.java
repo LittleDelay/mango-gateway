@@ -3,12 +3,14 @@ package com.mango.config;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
+import com.mango.core.bean.response.ApiResponse;
 import com.mango.core.bean.response.ErrorResponseData;
 import com.mango.core.bean.response.ResponseKit;
 import com.mango.core.config.Const;
 import com.mango.core.enums.BizExceptionEnum;
 import com.mango.core.exception.BizException;
 import com.mango.service.PermissionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -19,6 +21,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
@@ -34,6 +37,8 @@ import java.util.Objects;
  * @version 1.0.0
  * @since 2021/6/28 16:15
  */
+@Slf4j
+@Component
 public class GatewayFilter implements GlobalFilter, Ordered {
 
     protected static ThreadLocal<String> ip = new ThreadLocal<>();
@@ -68,22 +73,26 @@ public class GatewayFilter implements GlobalFilter, Ordered {
         }
 
         String token = request.getHeaders().getFirst(Const.TOKEN_NAME);
+        log.info("获取到的Admin-Token: {}", token);
+
         /*
          兼容微信小程序请求文件以及文件预览
          */
         if(url.startsWith("/adminFile/down/")){
             token = request.getQueryParams().getFirst("c");
             if(StrUtil.isNotEmpty(token)){
-//                request = exchange.getRequest().mutate().header(Const.TOKEN_NAME, token).build();
+                request = exchange.getRequest().mutate().header(Const.TOKEN_NAME, token).build();
             }
         }
         //验证token
         String authentication = permissionService.invalidAccessToken(token,url,request.getCookies());
+        log.info("Token验证结果: {}", authentication);
         if (StrUtil.isEmpty(authentication)){
             throw new BizException(BizExceptionEnum.NOT_TOKEN.getCode(), BizExceptionEnum.NOT_TOKEN.getName());
         }
         //验证有无权限
         boolean permission = permissionService.hasPermission(authentication, url ,method);
+        log.info("权限验证结果: {}", permission);
         if (!permission) {
             return unauthorized(exchange);
         }
@@ -97,7 +106,7 @@ public class GatewayFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> unauthorized(ServerWebExchange serverWebExchange) {
         serverWebExchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        ErrorResponseData result = ResponseKit.fail(BizExceptionEnum.SYSTEM_NO_AUTH.getCode(), BizExceptionEnum.SYSTEM_NO_AUTH.getName());
+        ApiResponse result = ResponseKit.fail(BizExceptionEnum.SYSTEM_NO_AUTH.getCode(), BizExceptionEnum.SYSTEM_NO_AUTH.getName());
         DataBuffer buffer = serverWebExchange.getResponse().bufferFactory().wrap(JSON.toJSONString(result).getBytes(CharsetUtil.systemCharset()));
         return serverWebExchange.getResponse().writeWith(Flux.just(buffer));
     }
