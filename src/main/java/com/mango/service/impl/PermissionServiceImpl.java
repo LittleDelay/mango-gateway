@@ -1,7 +1,9 @@
 package com.mango.service.impl;
 
 import com.mango.service.PermissionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpCookie;
+import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 /**
@@ -11,6 +13,8 @@ import org.springframework.util.MultiValueMap;
  * @version 1.0.0
  * @since 2021/8/31 10:35
  */
+@Slf4j
+@Service
 public class PermissionServiceImpl implements PermissionService {
 
     /**
